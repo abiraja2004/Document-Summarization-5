@@ -1,9 +1,10 @@
 import pickle
 import csv
 
-def csv_reader(csv_data):
-    reader = csv.reader(csv_data)
+def csv_dict_reader(csv_data):
+    reader = csv.DictReader(csv_data)
     return reader
+
 def save_to_disk(data,file_name):
     """
     A function to save any data structure to a file using pickle module
