@@ -3,6 +3,7 @@ import feature_extractor
 import preprocessing
 import os
 import config
+import nltk
 
 current_directory = os.path.dirname(os.path.realpath(__file__))
 
@@ -35,10 +36,11 @@ if __name__ == '__main__':
 
     list2 = []
 
-    top_sentences = feature_extractor.ranking(clean_data[7]['article'], doc_matrix, features, config.SUMMARY_LENGTH)
-
-    print(clean_data[7]['article'])
-    summary = '.'.join([clean_data[7]['article'].split('.')[i]
+    top_sentences = feature_extractor.ranking(clean_data[8]['article'], doc_matrix, features, config.SUMMARY_LENGTH,clean_data[8]['title'])
+    print clean_data[8]['title']
+    print(clean_data[8]['article'])
+    article_sentences = nltk.sent_tokenize(clean_data[8]['article'])
+    summary = '.'.join([ article_sentences[i]
                         for i in [pair[0] for pair in top_sentences]])
     summary = ' '.join(summary.split())
     print("summary")
