@@ -1,7 +1,9 @@
-import util
 import os
-import string
 import re
+import string
+
+import util
+
 # from io import open
 current_directory = os.path.dirname(os.path.realpath(__file__))
 

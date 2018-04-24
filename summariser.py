@@ -1,26 +1,37 @@
-import util
-import feature_extractor
-import preprocessing
 import os
-import config
-import nltk
-from math import sqrt
+import argparse
 from collections import Counter
+from math import sqrt
+
+import nltk
 from nltk.stem import WordNetLemmatizer
 
+import config
+import feature_extractor
+import preprocessing
+import util
 
 current_directory = os.path.dirname(os.path.realpath(__file__))
-stopwords = open(os.path.join(current_directory,'stopwords.txt'))
-stopwords_list = [stopword.strip() for stopword in stopwords]
-stopwords.close()
 
+def parse_args():
+    argparser = argparse.ArgumentParser()
+    argparser.add_argument('-a', dest='article_no', help='Article No which needs to be summarised')
+    arguments = argparser.parse_args()
+    return arguments
 
-def cosine_similarity(sent1, sent2):
-    lemmatiser = WordNetLemmatizer()
+def get_stopwords():
+    stopwords = open(os.path.join(current_directory,'stopwords.txt'))
+    stopwords_list = [stopword.strip() for stopword in stopwords]
+    stopwords.close()
     stopwords_list_lemmatised = [lemmatiser.lemmatize(stopword) for stopword in stopwords_list]
+    return stopwords_list_lemmatised
 
-    filtered_sent1 = [lemmatiser.lemmatize(preprocessing.remove_all_punctuation(word.strip())) for word in sent1.split(' ') if word.strip() not in stopwords_list_lemmatised]
-    filtered_sent2 = [lemmatiser.lemmatize(preprocessing.remove_all_punctuation(word.strip())) for word in sent2.split(' ') if word.strip() not in stopwords_list_lemmatised]
+def cosine_similarity(sent1, sent2, lemmatiser, stopwords_list):
+
+    filtered_sent1 = [lemmatiser.lemmatize(preprocessing.remove_all_punctuation(word.strip()))
+                      for word in sent1.split(' ') if word.strip() not in stopwords_list]
+    filtered_sent2 = [lemmatiser.lemmatize(preprocessing.remove_all_punctuation(word.strip()))
+                      for word in sent2.split(' ') if word.strip() not in stopwords_list]
 
     freq_sent1 = Counter(filtered_sent1)
     freq_sent2 = Counter(filtered_sent2)
@@ -36,18 +47,16 @@ def cosine_similarity(sent1, sent2):
     if not denominator:
         return 0.0
     else:
-        # print 'sent1: {}'.format(filtered_sent1)
-        # print 'sent2: {}'.format(filtered_sent2)
-        # print 'cosine: {}'.format(float(numerator) / denominator)
         return float(numerator) / denominator
 
 
-def generate_summary_cosine_similarity(tokenized_sentences, ranked_sentences, summary_length):
+def generate_summary_cosine_similarity(tokenized_sentences, ranked_sentences, summary_length, lemmatiser, stopwords_list):
 
     def similarity_calculate(summary_sentences, sentence):
         no_of_similar_sentences = 0
         for sentence_details in summary_sentences.values():
-            if cosine_similarity(tokenized_sentences[sentence_details[0][0]], tokenized_sentences[sentence]) > config.SIMILARITY_THRESHOLD:
+            if cosine_similarity(tokenized_sentences[sentence_details[0][0]],
+                                 tokenized_sentences[sentence], lemmatiser, stopwords_list) > config.SIMILARITY_THRESHOLD:
                 no_of_similar_sentences+=1
 
         return no_of_similar_sentences
@@ -55,8 +64,12 @@ def generate_summary_cosine_similarity(tokenized_sentences, ranked_sentences, su
     sentences_similarity = {0 : [ranked_sentences[0]]}
     # print summary_sentences
     for i in xrange(1,len(ranked_sentences)):
-        sentences_similarity[similarity_calculate(sentences_similarity,ranked_sentences[i][0])].append(ranked_sentences[i])
+        similarity = similarity_calculate(sentences_similarity,ranked_sentences[i][0])
+        if similarity not in sentences_similarity:
+            sentences_similarity[similarity] = []
+        sentences_similarity[similarity].append(ranked_sentences[i])
 
+    # print sentences_similarity
     if len(sentences_similarity[0]) >= summary_length:
         top_sentences = sorted(sentences_similarity[0], key=lambda x: x[1] * -1)[:summary_length]
     else:
@@ -73,7 +86,7 @@ def generate_summary_cosine_similarity(tokenized_sentences, ranked_sentences, su
     return top_sentences
 
 
-def generate_summary(tokenized_sentences, ranked_sentences):
+def generate_summary(tokenized_sentences, ranked_sentences, lemmatiser, stopwords_list):
 
     if config.SUMMARY_LENGTH < 1:
         summary_length = len(tokenized_sentences)*config.SUMMARY_LENGTH
@@ -81,7 +94,8 @@ def generate_summary(tokenized_sentences, ranked_sentences):
         summary_length = min(config.SUMMARY_LENGTH, len(tokenized_sentences))
 
     if config.USE_SIMILARITY:
-        top_sentences = generate_summary_cosine_similarity(tokenized_sentences, ranked_sentences, summary_length)
+        top_sentences = generate_summary_cosine_similarity(tokenized_sentences, ranked_sentences, summary_length,
+                                                           lemmatiser, stopwords_list)
     else:
         top_sentences = ranked_sentences[:summary_length]
 
@@ -92,7 +106,13 @@ def generate_summary(tokenized_sentences, ranked_sentences):
 
 if __name__ == '__main__':
 
+
+    article_no = int(parse_args().article_no)
+    print article_no
     clean_data = preprocessing.pre_process()
+
+    lemmatiser = WordNetLemmatizer()
+    stopwords_list = get_stopwords()
 
     # corpus_data = [record['article'] for record in clean_data]
     corpus_data = map(lambda record: record['article'], clean_data)
@@ -118,12 +138,14 @@ if __name__ == '__main__':
     doc_matrix = transformed_dense[0:40].tolist()[0]  # Here we are supposed to put the entire transformed_dense
 
     list2 = []
-    tokenized_sentences = nltk.sent_tokenize(clean_data[8]['article'])
-    ranked_sentences = feature_extractor.ranking(clean_data[8]['article'], doc_matrix, features,clean_data[8]['title'])
-    print clean_data[8]['title']
-    print(clean_data[8]['article'])
+    tokenized_sentences = nltk.sent_tokenize(clean_data[article_no]['article'])
 
-    summary = generate_summary(tokenized_sentences,ranked_sentences)
+    ranked_sentences = feature_extractor.ranking(clean_data[article_no]['article'], doc_matrix, features,
+                                                 clean_data[article_no]['title'], lemmatiser, stopwords_list)
+    print clean_data[article_no]['title']
+    print(clean_data[article_no]['article'])
+
+    summary = generate_summary(tokenized_sentences,ranked_sentences, lemmatiser, stopwords_list)
     # article_sentences = nltk.sent_tokenize(clean_data[8]['article'])
     # summary = '.'.join([ article_sentences[i]
     #                     for i in [pair[0] for pair in top_sentences]])

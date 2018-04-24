@@ -1,5 +1,6 @@
-import pickle
 import csv
+import pickle
+
 
 def csv_dict_reader(csv_data):
     reader = csv.DictReader(csv_data)
