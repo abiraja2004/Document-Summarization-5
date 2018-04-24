@@ -15,7 +15,7 @@ def title_similarity(title,sentence):
     return similarity
 
 
-def ranking(document, tfidf_matrix, features, summary_length, title):
+def ranking(document, tfidf_matrix, features, title):
     # print(document)
     sentences = nltk.sent_tokenize(document)
     tokenized_sentences = [nltk.word_tokenize(sentence) for sentence in sentences]
@@ -41,4 +41,4 @@ def ranking(document, tfidf_matrix, features, summary_length, title):
     ranked_sentences = [pair for pair in zip(range(len(sentence_score)), positon_based_weighing)]
     # print(ranked_sentences)
     ranked_sentences = sorted(ranked_sentences, key=lambda x: x[1] * -1)
-    return ranked_sentences[:summary_length]
+    return ranked_sentences
