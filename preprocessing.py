@@ -24,6 +24,8 @@ def remove_all_punctuation(text):
 def clean_text(text):
     raw_text = remove_non_ascii(text)
     raw_text = re.sub('\s+', ' ', raw_text).strip()
+    raw_text = re.sub('([.])(\S\S)',r'. \2', raw_text)
+    raw_text = re.sub('([.])([A])', r'. \2', raw_text)
     # re_list = [['\.*\s*\?', '.\"'], ['\?*\s*\.', '\".'],['\,*\s*\?', ',\"'],
     #            ['\?*\s*\,', '\",'],['\;*\s*\?', ';\"'],['\?*\s*\;', '\";']]
     # for expr in re_list:

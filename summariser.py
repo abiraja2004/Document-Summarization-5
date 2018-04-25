@@ -1,5 +1,5 @@
-import os
 import argparse
+import os
 from collections import Counter
 from math import sqrt
 
@@ -139,7 +139,8 @@ if __name__ == '__main__':
 
     list2 = []
     tokenized_sentences = nltk.sent_tokenize(clean_data[article_no]['article'])
-
+    # for i,s in enumerate(tokenized_sentences):
+    #     print '{} {}'.format(i,s)
     ranked_sentences = feature_extractor.ranking(clean_data[article_no]['article'], doc_matrix, features,
                                                  clean_data[article_no]['title'], lemmatiser, stopwords_list)
     print clean_data[article_no]['title']
